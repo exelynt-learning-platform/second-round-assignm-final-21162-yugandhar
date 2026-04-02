@@ -22,7 +22,7 @@ public class AuthService {
         this.jwtUtil = jwtUtil;
     }
 
-    // ✅ REGISTER
+    //Register
     public String register(User user) {
         user.setPassword(encoder.encode(user.getPassword())); // 🔐 IMPORTANT
         user.setRole("ROLE_USER");
@@ -30,7 +30,7 @@ public class AuthService {
         return "User Registered Successfully";
     }
 
-    // ✅ LOGIN
+    //Login
     public String login(String email, String password) {
 
     User user = userRepo.findByEmail(email)
