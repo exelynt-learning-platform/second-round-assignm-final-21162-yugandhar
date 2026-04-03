@@ -4,45 +4,41 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.ecommerce.backend.config.JwtUtil;
+import com.ecommerce.backend.dto.AuthRequest;
 import com.ecommerce.backend.entity.User;
 import com.ecommerce.backend.repository.UserRepository;
 
 @Service
 public class AuthService {
 
-    private final UserRepository userRepo;
+    private final UserRepository repo;
     private final BCryptPasswordEncoder encoder;
     private final JwtUtil jwtUtil;
 
-    public AuthService(UserRepository userRepo,
-                       BCryptPasswordEncoder encoder,
-                       JwtUtil jwtUtil) {
-        this.userRepo = userRepo;
+    public AuthService(UserRepository repo, BCryptPasswordEncoder encoder, JwtUtil jwtUtil) {
+        this.repo = repo;
         this.encoder = encoder;
         this.jwtUtil = jwtUtil;
     }
 
-    // ✅ REGISTER
     public String register(User user) {
-        user.setPassword(encoder.encode(user.getPassword())); // 🔐 IMPORTANT
+        user.setPassword(encoder.encode(user.getPassword()));
         user.setRole("ROLE_USER");
-        userRepo.save(user);
-        return "User Registered Successfully";
+        repo.save(user);
+        return "Registered Successfully";
     }
 
-    // ✅ LOGIN
-    public String login(String email, String password) {
+    // FIXED LOGIN
+    public String login(AuthRequest request) {
 
-    User user = userRepo.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+        User dbUser = repo.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-    System.out.println("Entered Password: " + password);
-    System.out.println("DB Password: " + user.getPassword());
+        if (!encoder.matches(request.getPassword(), dbUser.getPassword())) {
+            throw new RuntimeException("Invalid password");
+        }
 
-    if (!encoder.matches(password, user.getPassword())) {
-        throw new RuntimeException("Invalid Password");
+        // USE DB USER EMAIL
+        return jwtUtil.generateToken(dbUser.getEmail());
     }
-
-    return jwtUtil.generateToken(email);
-}
 }

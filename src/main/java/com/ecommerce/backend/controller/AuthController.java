@@ -1,6 +1,5 @@
 package com.ecommerce.backend.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,19 +10,24 @@ import com.ecommerce.backend.entity.User;
 import com.ecommerce.backend.service.AuthService;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 public class AuthController {
 
-    @Autowired
-    private AuthService authService;
+    private final AuthService service;
 
-    @PostMapping("/register")
-    public String register(@RequestBody User user) {
-        return authService.register(user);
+    public AuthController(AuthService service) {
+        this.service = service;
     }
 
+    //REGISTER
+    @PostMapping("/register")
+    public String register(@RequestBody User user) {
+        return service.register(user);
+    }
+
+    //LOGIN
     @PostMapping("/login")
     public String login(@RequestBody AuthRequest request) {
-        return authService.login(request.getEmail(), request.getPassword());
+        return service.login(request);
     }
 }
