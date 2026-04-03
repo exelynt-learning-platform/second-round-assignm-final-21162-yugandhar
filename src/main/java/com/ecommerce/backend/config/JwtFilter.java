@@ -1,19 +1,20 @@
 package com.ecommerce.backend.config;
 
 import java.io.IOException;
+import java.util.Collections;
 
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.GenericFilter;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 @Component
-public class JwtFilter extends GenericFilter {
+public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
 
@@ -22,26 +23,30 @@ public class JwtFilter extends GenericFilter {
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
+    protected void doFilterInternal(HttpServletRequest req,
+                                    HttpServletResponse res,
+                                    FilterChain chain)
+            throws ServletException, IOException {
 
-        HttpServletRequest req = (HttpServletRequest) request;
+        String path = req.getServletPath();
+
+        if (path.startsWith("/api/auth")) {
+            chain.doFilter(req, res);
+            return;
+        }
 
         String header = req.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
+            String email = jwtUtil.extractEmail(token);
 
-            try {
-                String email = jwtUtil.extractEmail(token);
-                req.setAttribute("email", email);
-            } catch (Exception e) {
-                HttpServletResponse res = (HttpServletResponse) response;
-                res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                return;
-            }
+            UsernamePasswordAuthenticationToken auth =
+                    new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
+
+            SecurityContextHolder.getContext().setAuthentication(auth);
         }
 
-        chain.doFilter(request, response);
+        chain.doFilter(req, res);
     }
 }
